@@ -8,6 +8,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -15,6 +18,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.vk.sdk.api.VKApi;
@@ -40,6 +44,7 @@ public class HistoryService extends Service {
 
     public static final String ACTION_START = "com.pcom.paratrooper.action.start";
     public static final String ACTION_STOP = "com.pcom.paratrooper.action.stop";
+    public static final String TAG = "HistoryService";
 
     private HistoryThread mt;
     private String key;
@@ -88,14 +93,17 @@ public class HistoryService extends Service {
 
         @Override
         public void run(){
-            System.out.println("hello");
+            Log.d(TAG, "hello");
             try {
                 lastClearance = 0L;
                 while(!this.isInterrupted()) {
-
+                        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+                        if (!(networkInfo != null && networkInfo.isConnected()))
+                            break;
                         EventDatabaseHelper evHelper = StartActivity.eventHelper;
                         SQLiteDatabase evdb = evHelper.getWritableDatabase();
-
+                        isReady = false;
                         VKRequest request = new VKRequest("messages.getLongPollServer");
                         request.executeWithListener(new VKRequest.VKRequestListener() {
                             @Override
@@ -115,7 +123,7 @@ public class HistoryService extends Service {
                             }
                         });
                         while (!isReady) {
-                            Thread.yield();
+                            Thread.sleep(300);
                         }
 //                        System.out.println("rangers go!");
                         while (!this.isInterrupted()) {
@@ -146,6 +154,7 @@ public class HistoryService extends Service {
                                 }
                             } catch (IOException e) {
                                 e.printStackTrace();
+                                break;
                             }
                         }
                 }
@@ -153,7 +162,7 @@ public class HistoryService extends Service {
                 e.printStackTrace();
             }
 
-            System.out.println("bye");
+            Log.d(TAG, "bye");
             stopSelf();
             }
         }

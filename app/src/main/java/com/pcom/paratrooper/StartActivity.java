@@ -34,10 +34,13 @@ public class StartActivity extends AppCompatActivity {
         if (!VKSdk.wakeUpSession(this)) {
             VKSdk.login(this, scope);
         }
+        else
+        {
+            Intent intent = new Intent(this, HistoryService.class);
+            intent.setAction(HistoryService.ACTION_START);
+            startService(intent);
+        }
         eventHelper = new EventDatabaseHelper(this);
-        Intent intent = new Intent(this, HistoryService.class);
-        intent.setAction(HistoryService.ACTION_START);
-        startService(intent);
         setContentView(R.layout.activity_start);
     }
 
